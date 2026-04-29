@@ -1,0 +1,20 @@
+# Backend
+backend/.env
+backend/vitaai.db
+backend/uploads/*
+!backend/uploads/.gitkeep
+backend/__pycache__/
+backend/**/__pycache__/
+backend/.venv/
+backend/dist/
+backend/*.egg-info/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+
+# General
+.DS_Store
+*.pyc
+*.pyo
