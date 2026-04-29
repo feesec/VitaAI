@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
-import { useStyletron } from "baseui";
+import { useEffect, useState } from "react";
+import { PageShell } from "@/components/app/page-shell";
+import { Card, CardContent } from "@/components/ui/card";
+import LoadingSpinner from "../components/LoadingSpinner";
 import { getOrgans } from "../api/organs";
 import type { OrganProfile, OrganSystem, RiskLevel } from "../types";
-import LoadingSpinner from "../components/LoadingSpinner";
 
 const ORGAN_NAMES: Record<OrganSystem, string> = {
   liver: "肝脏",
@@ -20,12 +21,12 @@ const ORGAN_ICONS: Record<OrganSystem, string> = {
   other: "🔬",
 };
 
-const RISK_COLORS: Record<RiskLevel, string> = {
-  high: "#D44333",
-  medium: "#E07B39",
-  low: "#3AA76D",
-  normal: "#3AA76D",
-  unknown: "#AFAFAF",
+const RISK_STYLES: Record<RiskLevel, string> = {
+  high: "text-rose-600 bg-rose-50",
+  medium: "text-amber-600 bg-amber-50",
+  low: "text-emerald-600 bg-emerald-50",
+  normal: "text-emerald-600 bg-emerald-50",
+  unknown: "text-slate-500 bg-slate-100",
 };
 
 const RISK_LABELS: Record<RiskLevel, string> = {
@@ -38,8 +39,7 @@ const RISK_LABELS: Record<RiskLevel, string> = {
 
 const MAIN_ORGANS: OrganSystem[] = ["liver", "cardiovascular", "digestive", "lung"];
 
-const OrgansPage: React.FC = () => {
-  const [css] = useStyletron();
+export default function OrgansPage() {
   const [organs, setOrgans] = useState<OrganProfile[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -53,97 +53,44 @@ const OrgansPage: React.FC = () => {
   if (loading) return <LoadingSpinner message="加载器官健康数据..." />;
 
   return (
-    <div className={css({ padding: "32px" })}>
-      <h1 className={css({ fontSize: "22px", fontWeight: "700", color: "#1A1A2E", marginBottom: "8px" })}>
-        器官健康
-      </h1>
-      <p className={css({ color: "#666", fontSize: "14px", marginBottom: "32px" })}>
-        基于您的历史检测数据，AI 对各器官健康状况的综合评估
-      </p>
-
-      <div
-        className={css({
-          display: "grid",
-          gridTemplateColumns: "repeat(2, 1fr)",
-          gap: "20px",
-        })}
-      >
+    <PageShell
+      title="器官健康"
+      description="基于您的历史检测数据，AI 对各器官健康状况的综合评估。"
+    >
+      <div className="grid gap-5 lg:grid-cols-2">
         {MAIN_ORGANS.map((organKey) => {
           const profile = organs.find((o) => o.organ === organKey);
-          const risk: RiskLevel = profile?.risk_level || "unknown";
+          const risk = profile?.risk_level || "unknown";
           return (
-            <div
-              key={organKey}
-              className={css({
-                backgroundColor: "#fff",
-                borderRadius: "16px",
-                padding: "28px",
-                boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
-                borderTop: `4px solid ${RISK_COLORS[risk]}`,
-              })}
-            >
-              {/* Header */}
-              <div className={css({ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px" })}>
-                <div>
-                  <div className={css({ fontSize: "28px", marginBottom: "4px" })}>
-                    {ORGAN_ICONS[organKey]}
+            <Card key={organKey}>
+              <CardContent className="p-7">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="text-3xl">{ORGAN_ICONS[organKey]}</div>
+                    <div className="mt-3 text-2xl font-semibold text-slate-950">{ORGAN_NAMES[organKey]}</div>
                   </div>
-                  <div className={css({ fontSize: "20px", fontWeight: "700", color: "#1A1A2E" })}>
-                    {ORGAN_NAMES[organKey]}
-                  </div>
+                  <span className={`rounded-full px-3 py-1 text-xs font-semibold ${RISK_STYLES[risk]}`}>{RISK_LABELS[risk]}</span>
                 </div>
-                <span
-                  className={css({
-                    padding: "4px 14px",
-                    borderRadius: "14px",
-                    fontSize: "13px",
-                    fontWeight: "700",
-                    backgroundColor: `${RISK_COLORS[risk]}15`,
-                    color: RISK_COLORS[risk],
-                  })}
-                >
-                  {RISK_LABELS[risk]}
-                </span>
-              </div>
 
-              {/* Watch Items */}
-              {profile?.watch_items ? (
-                <div className={css({ marginBottom: "16px" })}>
-                  <div className={css({ fontSize: "12px", fontWeight: "600", color: "#999", marginBottom: "6px", textTransform: "uppercase" })}>
-                    关注项目
+                {profile?.watch_items ? (
+                  <div className="mt-6 rounded-2xl bg-slate-50 p-4">
+                    <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">关注项目</div>
+                    <div className="mt-2 text-sm leading-6 text-slate-600">{profile.watch_items}</div>
                   </div>
-                  <div className={css({ fontSize: "13px", color: "#444", lineHeight: "1.5" })}>
-                    {profile.watch_items}
-                  </div>
-                </div>
-              ) : (
-                <div
-                  className={css({
-                    padding: "16px",
-                    backgroundColor: "#F7F8FA",
-                    borderRadius: "8px",
-                    fontSize: "13px",
-                    color: "#999",
-                    textAlign: "center",
-                    marginBottom: "16px",
-                  })}
-                >
-                  暂无趋势数据
-                </div>
-              )}
+                ) : (
+                  <div className="mt-6 rounded-2xl bg-slate-50 p-4 text-sm text-slate-500">暂无趋势数据</div>
+                )}
 
-              {/* Updated time */}
-              {profile?.updated_at && (
-                <div className={css({ fontSize: "11px", color: "#BBB" })}>
-                  更新于 {new Date(profile.updated_at).toLocaleDateString("zh-CN")}
-                </div>
-              )}
-            </div>
+                {profile?.updated_at ? (
+                  <div className="mt-5 text-xs text-slate-400">
+                    更新于 {new Date(profile.updated_at).toLocaleDateString("zh-CN")}
+                  </div>
+                ) : null}
+              </CardContent>
+            </Card>
           );
         })}
       </div>
-    </div>
+    </PageShell>
   );
-};
-
-export default OrgansPage;
+}

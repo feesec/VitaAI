@@ -1,13 +1,14 @@
-import React, { useState, useRef } from "react";
+import { useRef, useState } from "react";
+import { FileUp, UploadCloud } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useStyletron } from "baseui";
-import { Tabs, Tab } from "baseui/tabs-motion";
-import { Button } from "baseui/button";
-import { Input } from "baseui/input";
-import { FormControl } from "baseui/form-control";
-import { Notification } from "baseui/notification";
-import { createRecord, uploadReport, parseRecord } from "../api/records";
-import type { IndicatorCreate } from "../api/records";
+import { FormField } from "@/components/app/form-field";
+import { PageShell } from "@/components/app/page-shell";
+import { StatusBanner } from "@/components/app/status-banner";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { createRecord, parseRecord, uploadReport, type IndicatorCreate } from "../api/records";
 
 interface IndicatorRow {
   name: string;
@@ -29,17 +30,14 @@ const PRESET_INDICATORS: IndicatorRow[] = [
   { name: "幽门螺杆菌", value: "", unit: "U/mL", ref_range_low: 0, ref_range_high: 30, organ_system: "digestive" },
 ];
 
-const NewRecordPage: React.FC = () => {
-  const [css] = useStyletron();
+export default function NewRecordPage() {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const [activeKey, setActiveKey] = useState<React.Key>("manual");
+  const [activeTab, setActiveTab] = useState("manual");
   const [recordDate, setRecordDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [indicators, setIndicators] = useState<IndicatorRow[]>(PRESET_INDICATORS);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadStatus, setUploadStatus] = useState<"idle" | "uploading" | "parsing">("idle");
   const [dragOver, setDragOver] = useState(false);
@@ -48,7 +46,7 @@ const NewRecordPage: React.FC = () => {
     setIndicators((prev) => prev.map((row, i) => (i === idx ? { ...row, value: val } : row)));
   };
 
-  const handleManualSubmit = async (e: React.FormEvent) => {
+  const handleManualSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const filled = indicators.filter((row) => row.value.trim() !== "");
     if (filled.length === 0) {
@@ -80,13 +78,6 @@ const NewRecordPage: React.FC = () => {
     setError("");
   };
 
-  const handleFileDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOver(false);
-    const file = e.dataTransfer.files[0];
-    if (file) handleFileSelect(file);
-  };
-
   const handleUploadSubmit = async () => {
     if (!uploadFile) {
       setError("请先选择文件");
@@ -106,179 +97,126 @@ const NewRecordPage: React.FC = () => {
   };
 
   return (
-    <div className={css({ padding: "32px" })}>
-      <h1 className={css({ fontSize: "22px", fontWeight: "700", color: "#1A1A2E", marginBottom: "24px" })}>
-        添加健康记录
-      </h1>
+    <PageShell title="添加健康记录" description="支持手动录入关键指标，也支持直接上传体检报告。">
+      <div className="mx-auto max-w-6xl space-y-4">
+        {error ? <StatusBanner variant="error" message={error} /> : null}
+        {uploadStatus === "uploading" ? <StatusBanner variant="info" message="正在上传文件..." /> : null}
+        {uploadStatus === "parsing" ? <StatusBanner variant="info" message="AI 正在解析报告，请稍候..." /> : null}
 
-      {error && (
-        <Notification kind="negative" overrides={{ Body: { style: { width: "100%", marginBottom: "16px" } } }}>
-          {error}
-        </Notification>
-      )}
+        <Tabs onValueChange={setActiveTab} value={activeTab}>
+          <TabsList>
+            <TabsTrigger value="manual">手动录入</TabsTrigger>
+            <TabsTrigger value="upload">上传报告</TabsTrigger>
+          </TabsList>
 
-      <Tabs
-        activeKey={activeKey}
-        onChange={({ activeKey: k }) => setActiveKey(k)}
-        activateOnFocus
-      >
-        <Tab key="manual" title="手动录入">
-          <form onSubmit={handleManualSubmit}>
-            <FormControl label="检查日期">
-              <Input
-                type="date"
-                value={recordDate}
-                onChange={(e) => setRecordDate(e.currentTarget.value)}
-                required
-              />
-            </FormControl>
+          <TabsContent value="manual">
+            <Card>
+              <CardContent className="p-6">
+                <form className="space-y-6" onSubmit={handleManualSubmit}>
+                  <div className="max-w-xs">
+                    <FormField label="检查日期">
+                      <Input type="date" value={recordDate} onChange={(e) => setRecordDate(e.currentTarget.value)} required />
+                    </FormField>
+                  </div>
 
-            <div
-              className={css({
-                backgroundColor: "#fff",
-                borderRadius: "8px",
-                overflow: "hidden",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-                marginBottom: "20px",
-              })}
-            >
-              {/* Table header */}
-              <div
-                className={css({
-                  display: "grid",
-                  gridTemplateColumns: "2fr 1fr 1fr 1.5fr",
-                  backgroundColor: "#F7F8FA",
-                  padding: "10px 16px",
-                  fontSize: "12px",
-                  fontWeight: "600",
-                  color: "#666",
-                  gap: "8px",
-                })}
-              >
-                <div>指标名称</div>
-                <div>检测值</div>
-                <div>单位</div>
-                <div>参考范围</div>
-              </div>
+                  <div className="overflow-hidden rounded-3xl border border-slate-200">
+                    <div className="grid grid-cols-[2fr_1fr_1fr_1.4fr] gap-3 bg-slate-100/80 px-5 py-3 text-xs font-semibold text-slate-500">
+                      <div>指标名称</div>
+                      <div>检测值</div>
+                      <div>单位</div>
+                      <div>参考范围</div>
+                    </div>
+                    {indicators.map((row, idx) => (
+                      <div key={row.name} className="grid grid-cols-[2fr_1fr_1fr_1.4fr] items-center gap-3 border-t border-slate-100 bg-white px-5 py-3">
+                        <div className="text-sm text-slate-700">{row.name}</div>
+                        <Input
+                          className="h-9"
+                          type="number"
+                          value={row.value}
+                          onChange={(e) => handleValueChange(idx, e.currentTarget.value)}
+                          placeholder="—"
+                          step="any"
+                        />
+                        <div className="text-xs text-slate-500">{row.unit}</div>
+                        <div className="text-xs text-slate-400">
+                          {row.ref_range_low} ~ {row.ref_range_high}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
 
-              {indicators.map((row, idx) => (
+                  <div className="flex gap-3">
+                    <Button disabled={submitting} type="submit">
+                      {submitting ? "提交中..." : "提交记录"}
+                    </Button>
+                    <Button type="button" variant="outline" onClick={() => navigate("/records")}>
+                      取消
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="upload">
+            <Card>
+              <CardContent className="max-w-2xl p-6">
                 <div
-                  key={row.name}
-                  className={css({
-                    display: "grid",
-                    gridTemplateColumns: "2fr 1fr 1fr 1.5fr",
-                    padding: "8px 16px",
-                    alignItems: "center",
-                    borderTop: "1px solid #F0F0F0",
-                    gap: "8px",
-                  })}
+                  className={`rounded-[28px] border-2 border-dashed p-10 text-center transition ${
+                    dragOver ? "border-sky-400 bg-sky-50" : "border-slate-200 bg-slate-50/70"
+                  }`}
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragLeave={() => setDragOver(false)}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setDragOver(true);
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setDragOver(false);
+                    const file = e.dataTransfer.files[0];
+                    if (file) handleFileSelect(file);
+                  }}
                 >
-                  <div className={css({ fontSize: "13px", color: "#333" })}>{row.name}</div>
-                  <Input
-                    type="number"
-                    size="mini"
-                    value={row.value}
-                    onChange={(e) => handleValueChange(idx, e.currentTarget.value)}
-                    placeholder="—"
-                    step="any"
+                  <input
+                    ref={fileInputRef}
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    className="hidden"
+                    type="file"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleFileSelect(file);
+                    }}
                   />
-                  <div className={css({ fontSize: "12px", color: "#666" })}>{row.unit}</div>
-                  <div className={css({ fontSize: "12px", color: "#999" })}>
-                    {row.ref_range_low} ~ {row.ref_range_high}
+                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-100 text-sky-700">
+                    {uploadFile ? <FileUp className="h-6 w-6" /> : <UploadCloud className="h-6 w-6" />}
                   </div>
+                  {uploadFile ? (
+                    <>
+                      <div className="text-base font-semibold text-slate-900">{uploadFile.name}</div>
+                      <div className="mt-2 text-sm text-slate-500">{(uploadFile.size / 1024).toFixed(0)} KB</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-base font-semibold text-slate-900">点击或拖拽文件到此处</div>
+                      <div className="mt-2 text-sm text-slate-500">支持 PDF、JPG、PNG 格式</div>
+                    </>
+                  )}
                 </div>
-              ))}
-            </div>
 
-            <div className={css({ display: "flex", gap: "12px" })}>
-              <Button type="submit" isLoading={submitting}>
-                提交记录
-              </Button>
-              <Button kind="tertiary" type="button" onClick={() => navigate("/records")}>
-                取消
-              </Button>
-            </div>
-          </form>
-        </Tab>
-
-        <Tab key="upload" title="上传报告">
-          <div className={css({ maxWidth: "480px" })}>
-            <div
-              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-              onDragLeave={() => setDragOver(false)}
-              onDrop={handleFileDrop}
-              onClick={() => fileInputRef.current?.click()}
-              className={css({
-                border: `2px dashed ${dragOver ? "#4FC3F7" : "#D0D0D0"}`,
-                borderRadius: "12px",
-                padding: "48px 32px",
-                textAlign: "center",
-                cursor: "pointer",
-                backgroundColor: dragOver ? "#F0FAFF" : "#FAFAFA",
-                transition: "all 0.2s",
-                marginBottom: "20px",
-              })}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
-                style={{ display: "none" }}
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) handleFileSelect(f);
-                }}
-              />
-              <div className={css({ fontSize: "40px", marginBottom: "12px" })}>📄</div>
-              {uploadFile ? (
-                <div>
-                  <div className={css({ fontSize: "14px", fontWeight: "600", color: "#333" })}>
-                    {uploadFile.name}
-                  </div>
-                  <div className={css({ fontSize: "12px", color: "#999", marginTop: "4px" })}>
-                    {(uploadFile.size / 1024).toFixed(0)} KB
-                  </div>
+                <div className="mt-6 flex gap-3">
+                  <Button disabled={!uploadFile || uploadStatus !== "idle"} onClick={handleUploadSubmit}>
+                    {uploadStatus === "idle" ? "上传并解析" : "处理中..."}
+                  </Button>
+                  <Button variant="outline" onClick={() => navigate("/records")}>
+                    取消
+                  </Button>
                 </div>
-              ) : (
-                <div>
-                  <div className={css({ fontSize: "14px", color: "#555", marginBottom: "4px" })}>
-                    点击或拖拽文件到此处
-                  </div>
-                  <div className={css({ fontSize: "12px", color: "#999" })}>
-                    支持 PDF、JPG、PNG 格式
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {uploadStatus === "uploading" && (
-              <Notification kind="info" overrides={{ Body: { style: { width: "100%", marginBottom: "16px" } } }}>
-                正在上传文件...
-              </Notification>
-            )}
-            {uploadStatus === "parsing" && (
-              <Notification kind="info" overrides={{ Body: { style: { width: "100%", marginBottom: "16px" } } }}>
-                AI正在解析报告，请稍候...
-              </Notification>
-            )}
-
-            <div className={css({ display: "flex", gap: "12px" })}>
-              <Button
-                onClick={handleUploadSubmit}
-                isLoading={uploadStatus !== "idle"}
-                disabled={!uploadFile || uploadStatus !== "idle"}
-              >
-                上传并解析
-              </Button>
-              <Button kind="tertiary" onClick={() => navigate("/records")}>
-                取消
-              </Button>
-            </div>
-          </div>
-        </Tab>
-      </Tabs>
-    </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </PageShell>
   );
-};
-
-export default NewRecordPage;
+}

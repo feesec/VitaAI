@@ -1,32 +1,14 @@
-import React from "react";
-import { Spinner } from "baseui/spinner";
-import { useStyletron } from "baseui";
+import { Loader2 } from "lucide-react";
 
 interface LoadingSpinnerProps {
   message?: string;
 }
 
-const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ message }) => {
-  const [css] = useStyletron();
+export default function LoadingSpinner({ message }: LoadingSpinnerProps) {
   return (
-    <div
-      className={css({
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "48px",
-        gap: "16px",
-      })}
-    >
-      <Spinner $size="large" />
-      {message && (
-        <p className={css({ color: "#666", margin: "0", fontSize: "14px" })}>
-          {message}
-        </p>
-      )}
+    <div className="flex flex-col items-center justify-center gap-4 py-16">
+      <Loader2 className="h-8 w-8 animate-spin text-sky-500" />
+      {message ? <p className="text-sm text-slate-500">{message}</p> : null}
     </div>
   );
-};
-
-export default LoadingSpinner;
+}

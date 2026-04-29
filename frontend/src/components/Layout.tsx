@@ -1,18 +1,17 @@
-import React from "react";
-import { NavLink, useNavigate, Outlet } from "react-router-dom";
-import { useStyletron } from "baseui";
-import { Button } from "baseui/button";
+import { LayoutDashboard, LogOut, NotepadText, Stethoscope, UserRound } from "lucide-react";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { useAuthStore } from "../store/authStore";
 
 const NAV_ITEMS = [
-  { to: "/dashboard", label: "仪表盘" },
-  { to: "/records", label: "健康记录" },
-  { to: "/organs", label: "器官健康" },
-  { to: "/profile", label: "健康档案" },
+  { to: "/dashboard", label: "仪表盘", icon: LayoutDashboard },
+  { to: "/records", label: "健康记录", icon: NotepadText },
+  { to: "/organs", label: "器官健康", icon: Stethoscope },
+  { to: "/profile", label: "健康档案", icon: UserRound },
 ];
 
-const Layout: React.FC = () => {
-  const [css] = useStyletron();
+export default function Layout() {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
 
@@ -22,109 +21,49 @@ const Layout: React.FC = () => {
   };
 
   return (
-    <div className={css({ display: "flex", minHeight: "100vh", backgroundColor: "#F7F8FA" })}>
-      {/* Sidebar */}
-      <aside
-        className={css({
-          width: "220px",
-          backgroundColor: "#1A1A2E",
-          color: "#fff",
-          display: "flex",
-          flexDirection: "column",
-          padding: "0",
-          flexShrink: "0",
-        })}
-      >
-        {/* Logo */}
-        <div
-          className={css({
-            padding: "24px 20px",
-            borderBottom: "1px solid rgba(255,255,255,0.1)",
-          })}
-        >
-          <div className={css({ fontSize: "22px", fontWeight: "700", color: "#4FC3F7" })}>
-            VitaAI
-          </div>
-          <div className={css({ fontSize: "12px", color: "rgba(255,255,255,0.5)", marginTop: "2px" })}>
-            AI健康管理
-          </div>
+    <div className="min-h-screen bg-transparent lg:grid lg:grid-cols-[280px_minmax(0,1fr)]">
+      <aside className="border-b border-white/70 bg-slate-950 px-5 py-6 text-white shadow-[0_30px_80px_-40px_rgba(15,23,42,0.7)] lg:min-h-screen lg:border-b-0 lg:border-r">
+        <div className="mb-8">
+          <div className="text-2xl font-semibold tracking-tight text-cyan-300">VitaAI</div>
+          <div className="mt-1 text-sm text-slate-400">AI 健康管理</div>
         </div>
 
-        {/* Nav Links */}
-        <nav className={css({ flex: "1", padding: "16px 0" })}>
-          {NAV_ITEMS.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) =>
-                css({
-                  display: "block",
-                  padding: "12px 20px",
-                  color: isActive ? "#4FC3F7" : "rgba(255,255,255,0.7)",
-                  backgroundColor: isActive ? "rgba(79,195,247,0.1)" : "transparent",
-                  textDecoration: "none",
-                  fontSize: "14px",
-                  fontWeight: isActive ? "600" : "400",
-                  borderLeft: isActive ? "3px solid #4FC3F7" : "3px solid transparent",
-                  transition: "all 0.2s",
-                  ":hover": {
-                    color: "#fff",
-                    backgroundColor: "rgba(255,255,255,0.05)",
-                  },
-                })
-              }
-            >
-              {item.label}
-            </NavLink>
-          ))}
+        <nav className="grid gap-2">
+          {NAV_ITEMS.map((item) => {
+            const Icon = item.icon;
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) =>
+                  cn(
+                    "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all",
+                    isActive
+                      ? "bg-cyan-400/12 text-cyan-200 shadow-[inset_0_0_0_1px_rgba(103,232,249,0.15)]"
+                      : "text-slate-300 hover:bg-white/5 hover:text-white"
+                  )
+                }
+              >
+                <Icon className="h-4 w-4" />
+                <span>{item.label}</span>
+              </NavLink>
+            );
+          })}
         </nav>
 
-        {/* User section */}
-        <div
-          className={css({
-            padding: "16px 20px",
-            borderTop: "1px solid rgba(255,255,255,0.1)",
-          })}
-        >
-          {user && (
-            <div
-              className={css({
-                fontSize: "13px",
-                color: "rgba(255,255,255,0.7)",
-                marginBottom: "12px",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              })}
-            >
-              {user.name}
-            </div>
-          )}
-          <Button
-            onClick={handleLogout}
-            size="mini"
-            kind="tertiary"
-            overrides={{
-              BaseButton: {
-                style: {
-                  color: "rgba(255,255,255,0.6)",
-                  width: "100%",
-                  ":hover": { color: "#fff", backgroundColor: "rgba(255,255,255,0.1)" },
-                },
-              },
-            }}
-          >
+        <div className="mt-8 rounded-3xl border border-white/10 bg-white/5 p-4">
+          <div className="mb-3 text-sm font-medium text-white">{user?.name ?? "未登录用户"}</div>
+          <div className="mb-4 truncate text-xs text-slate-400">{user?.email}</div>
+          <Button variant="ghost" className="w-full justify-start px-3 text-slate-300 hover:bg-white/10 hover:text-white" onClick={handleLogout}>
+            <LogOut className="h-4 w-4" />
             退出登录
           </Button>
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className={css({ flex: "1", overflow: "auto" })}>
+      <main className="min-w-0">
         <Outlet />
       </main>
     </div>
   );
-};
-
-export default Layout;
+}

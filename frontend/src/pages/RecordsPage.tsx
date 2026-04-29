@@ -1,13 +1,15 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { ChevronRight, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useStyletron } from "baseui";
-import { Button } from "baseui/button";
+import { EmptyState } from "@/components/app/empty-state";
+import { PageShell } from "@/components/app/page-shell";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import LoadingSpinner from "../components/LoadingSpinner";
 import { getRecords } from "../api/records";
 import type { HealthRecord } from "../types";
-import LoadingSpinner from "../components/LoadingSpinner";
 
-const RecordsPage: React.FC = () => {
-  const [css] = useStyletron();
+export default function RecordsPage() {
   const navigate = useNavigate();
   const [records, setRecords] = useState<HealthRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,95 +24,46 @@ const RecordsPage: React.FC = () => {
   if (loading) return <LoadingSpinner message="加载记录..." />;
 
   return (
-    <div className={css({ padding: "32px" })}>
-      <div className={css({ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" })}>
-        <h1 className={css({ fontSize: "22px", fontWeight: "700", color: "#1A1A2E", margin: "0" })}>
-          健康记录
-        </h1>
+    <PageShell
+      title="健康记录"
+      description="查看历史体检、化验和 AI 解读结果。"
+      action={
         <Button onClick={() => navigate("/records/new")}>
-          + 添加记录
+          <Plus className="h-4 w-4" />
+          添加记录
         </Button>
-      </div>
-
+      }
+    >
       {records.length === 0 ? (
-        <div
-          className={css({
-            backgroundColor: "#fff",
-            borderRadius: "12px",
-            padding: "48px",
-            textAlign: "center",
-            color: "#999",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-          })}
-        >
-          <div className={css({ fontSize: "40px", marginBottom: "16px" })}>📋</div>
-          <div className={css({ fontSize: "16px", marginBottom: "8px", color: "#555" })}>暂无健康记录</div>
-          <div className={css({ fontSize: "14px", marginBottom: "24px" })}>添加您的第一条体检记录，开始AI健康分析</div>
-          <Button onClick={() => navigate("/records/new")}>立即添加</Button>
-        </div>
+        <EmptyState
+          icon="📋"
+          title="暂无健康记录"
+          description="添加您的第一条体检记录，开始 AI 健康分析。"
+          action={<Button onClick={() => navigate("/records/new")}>立即添加</Button>}
+        />
       ) : (
-        <div className={css({ display: "flex", flexDirection: "column", gap: "12px" })}>
+        <div className="space-y-3">
           {records.map((record) => (
-            <div
-              key={record.id}
-              onClick={() => navigate(`/records/${record.id}`)}
-              className={css({
-                backgroundColor: "#fff",
-                borderRadius: "12px",
-                padding: "20px 24px",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-                cursor: "pointer",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                ":hover": { boxShadow: "0 4px 12px rgba(0,0,0,0.1)" },
-              })}
-            >
-              <div>
-                <div className={css({ fontSize: "16px", fontWeight: "600", color: "#1A1A2E", marginBottom: "6px" })}>
-                  {record.record_date}
-                </div>
-                <div className={css({ display: "flex", gap: "8px", alignItems: "center" })}>
-                  <span
-                    className={css({
-                      padding: "2px 8px",
-                      borderRadius: "10px",
-                      fontSize: "11px",
-                      fontWeight: "600",
-                      backgroundColor: record.source === "manual" ? "#E8F4FD" : "#EDF7ED",
-                      color: record.source === "manual" ? "#1976D2" : "#2E7D32",
-                    })}
-                  >
-                    {record.source === "manual" ? "手动录入" : "上传报告"}
-                  </span>
-                  {record.indicators && record.indicators.length > 0 && (
-                    <span className={css({ fontSize: "12px", color: "#999" })}>
-                      {record.indicators.length} 项指标
+            <Card key={record.id} className="cursor-pointer transition-transform hover:-translate-y-0.5" onClick={() => navigate(`/records/${record.id}`)}>
+              <CardContent className="flex items-center justify-between gap-4 p-5">
+                <div>
+                  <div className="text-base font-semibold text-slate-900">{record.record_date}</div>
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                    <span className="rounded-full bg-sky-50 px-2.5 py-1 font-medium text-sky-700">
+                      {record.source === "manual" ? "手动录入" : "上传报告"}
                     </span>
-                  )}
-                  {record.interpretation_json && (
-                    <span
-                      className={css({
-                        padding: "2px 8px",
-                        borderRadius: "10px",
-                        fontSize: "11px",
-                        fontWeight: "600",
-                        backgroundColor: "#F3E5F5",
-                        color: "#7B1FA2",
-                      })}
-                    >
-                      已AI解读
-                    </span>
-                  )}
+                    {record.indicators?.length ? <span>{record.indicators.length} 项指标</span> : null}
+                    {record.interpretation_json ? (
+                      <span className="rounded-full bg-emerald-50 px-2.5 py-1 font-medium text-emerald-700">已 AI 解读</span>
+                    ) : null}
+                  </div>
                 </div>
-              </div>
-              <div className={css({ color: "#4FC3F7", fontSize: "24px" })}>›</div>
-            </div>
+                <ChevronRight className="h-5 w-5 text-sky-500" />
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}
-    </div>
+    </PageShell>
   );
-};
-
-export default RecordsPage;
+}
